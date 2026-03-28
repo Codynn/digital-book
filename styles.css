@@ -348,3 +348,20 @@ body {
     height: calc(96vw * 0.66);
   }
 }
+
+.spread-page img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+}
+
+.page-front img,
+.page-back img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+}
