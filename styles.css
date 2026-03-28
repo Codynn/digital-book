@@ -1,0 +1,350 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #f0f2f5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #333;
+  user-select: none;
+}
+
+/* ── Scene & Book ── */
+.scene {
+  perspective: 2000px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.book-wrap {
+  position: relative;
+  width: 700px;
+  height: 460px;
+  display: flex;
+  align-items: stretch;
+  border-radius: 4px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.18),
+    0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Static hardcovers */
+.book-left,
+.book-right {
+  width: 50%;
+  height: 100%;
+  background: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.book-left {
+  border-radius: 4px 0 0 4px;
+  border-right: 1px solid #e0e0e0;
+}
+.book-right {
+  border-radius: 0 4px 4px 0;
+}
+.pages-container::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #2c2c2c;
+  box-shadow:
+    -2px 0 8px rgba(0, 0, 0, 0.3),
+    2px 0 8px rgba(0, 0, 0, 0.3);
+  z-index: 25;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+/* Spine */
+.spine {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  transform: translateX(-50%);
+  background: #d0d4db;
+  z-index: 5;
+  pointer-events: none;
+}
+.spine::before,
+.spine::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.08);
+}
+.spine::before {
+  top: 0;
+}
+.spine::after {
+  bottom: 0;
+}
+
+/* ── Pages container (the flip area) ── */
+.pages-container {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Static spread pages (always visible beneath flip pages) */
+.spread-page {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  overflow: hidden;
+  pointer-events: none;
+}
+.spread-page.left {
+  left: 0;
+  border-radius: 4px 0 0 4px;
+}
+.spread-page.right {
+  right: 0;
+  border-radius: 0 4px 4px 0;
+}
+
+.spread-page img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Flip page ── */
+.page {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%; /* anchored at spine */
+  width: 50%;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  transform: rotateY(0deg);
+  transition: none;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.page.flipped {
+  transform: rotateY(-180deg);
+}
+
+.page-front,
+.page-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+}
+.page-front img,
+.page-back img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.page-back {
+  transform: rotateY(180deg);
+}
+
+/* Page curl shadow */
+.page::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 20px;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.07), transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+.page.flipped::after {
+  left: auto;
+  right: 0;
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.07), transparent);
+}
+
+/* ── Hover zones ── */
+.hover-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: auto;
+}
+.hover-zone:hover {
+  opacity: 1;
+}
+.left-zone {
+  left: 0;
+  justify-content: flex-start;
+  padding-left: 16px;
+}
+.right-zone {
+  right: 0;
+  justify-content: flex-end;
+  padding-right: 16px;
+}
+
+.zone-arrow {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #555;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+.hover-zone:hover .zone-arrow {
+  background: #fff;
+  transform: scale(1.1);
+}
+
+/* ── Controls ── */
+.controls {
+  margin-top: 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.btn-flip {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid #ccc;
+  background: #fff;
+  color: #444;
+  font-size: 16px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-flip:hover:not(:disabled) {
+  background: #f5f5f5;
+  border-color: #aaa;
+  transform: scale(1.05);
+}
+.btn-flip:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.page-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #666;
+}
+.page-input-wrap input {
+  width: 46px;
+  text-align: center;
+  border: 1.5px solid #ddd;
+  border-radius: 6px;
+  padding: 5px 4px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.page-input-wrap input:focus {
+  border-color: #7ab;
+}
+.page-input-wrap .total {
+  color: #999;
+}
+
+#goBtn {
+  border: 1.5px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  padding: 5px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #555;
+  transition: background 0.15s;
+}
+#goBtn:hover {
+  background: #f5f5f5;
+}
+
+/* ── Progress dots ── */
+.progress-dots {
+  margin-top: 16px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 700px;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ccc;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+.dot.active {
+  background: #7ab;
+  transform: scale(1.3);
+}
+.dot:hover:not(.active) {
+  background: #aaa;
+}
+
+/* ── Swipe hint ── */
+.swipe-hint {
+  margin-top: 12px;
+  font-size: 11px;
+  color: #bbb;
+  letter-spacing: 0.3px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 740px) {
+  .book-wrap {
+    width: 96vw;
+    height: calc(96vw * 0.66);
+  }
+}

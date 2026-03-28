@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Digital Book</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="scene">
+      <div class="book-wrap" id="bookWrap">
+        <div class="spine"></div>
+
+        <div class="book-left"></div>
+        <div class="book-right"></div>
+
+        <div class="hover-zone left-zone" id="leftZone">
+          <span class="zone-arrow">&#8592;</span>
+        </div>
+        <div class="hover-zone right-zone" id="rightZone">
+          <span class="zone-arrow">&#8594;</span>
+        </div>
+
+        <div class="pages-container" id="pagesContainer"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn-flip" id="btnPrev" title="Previous spread">
+        &#8592;
+      </button>
+
+      <div class="page-input-wrap">
+        <label for="pageInput">Spread</label>
+        <input type="number" id="pageInput" min="1" value="1" />
+        <span class="total" id="totalLabel">/ 1</span>
+        <button id="goBtn" title="Go">&#9166;</button>
+      </div>
+
+      <button class="btn-flip" id="btnNext" title="Next spread">&#8594;</button>
+    </div>
+
+    <div class="progress-dots" id="progressDots"></div>
+    <div class="swipe-hint">
+      Swipe or click arrows to turn &nbsp;·&nbsp; Enter spread number to jump
+    </div>
+
+    <script>
+      const SPREADS = [
+        { left: "./images/1.png", right: "./images/2.png" }, // First spread = only right page (left is blank)
+        { left: "./images/2.png", right: "./images/3.png" },
+        { left: "./images/4.png", right: "./images/5.png" },
+        { left: "./images/6.png", right: "./images/7.png" },
+        { left: "./images/8.png", right: "./images/10.png" },
+      ];
+
+      const totalSpreads = SPREADS.length;
+      let currentSpread = 0;
+      let isFlipping = false;
+
+      const container = document.getElementById("pagesContainer");
+      const pages = [];
+      let leftStatic, rightStatic;
+
+      function makeImg(src) {
+        const img = document.createElement("img");
+        img.draggable = false;
+        if (!src) {
+          img.src = "blank.avif";
+          return img;
+        }
+        img.src = src;
+
+        img.onerror = function () {
+          this.onerror = null;
+          this.src = "blank.avif";
+        };
+
+        return img;
+      }
+
+      function buildStaticSpread() {
+        leftStatic = document.createElement("div");
+        leftStatic.className = "spread-page left";
+        rightStatic = document.createElement("div");
+        rightStatic.className = "spread-page right";
+        container.appendChild(leftStatic);
+        container.appendChild(rightStatic);
+        leftStatic.style.zIndex = "10";
+        rightStatic.style.zIndex = "10";
+      }
+
+      function updateStaticSpread() {
+        if (!leftStatic) buildStaticSpread();
+        leftStatic.innerHTML = "";
+        rightStatic.innerHTML = "";
+        leftStatic.appendChild(makeImg(SPREADS[currentSpread].left));
+        rightStatic.appendChild(makeImg(SPREADS[currentSpread].right));
+      }
+
+      function updateZIndices() {
+        pages.forEach((p, i) => {
+          if (i < currentSpread) {
+            p.style.zIndex = "1";
+          } else {
+            p.style.zIndex = totalSpreads - (i - currentSpread);
+          }
+        });
+      }
+
+      function buildPages() {
+        container.innerHTML = "";
+        pages.length = 0;
+        updateStaticSpread();
+
+        for (let i = 0; i < totalSpreads - 1; i++) {
+          const page = document.createElement("div");
+          page.className = "page";
+          page.dataset.index = i;
+
+          const front = document.createElement("div");
+          front.className = "page-front";
+          front.appendChild(makeImg(SPREADS[i].right));
+
+          const back = document.createElement("div");
+          back.className = "page-back";
+          back.appendChild(makeImg(SPREADS[i + 1].left));
+
+          page.appendChild(front);
+          page.appendChild(back);
+          container.appendChild(page);
+          pages.push(page);
+        }
+
+        pages.forEach((p, i) => {
+          if (currentSpread > i) p.classList.add("flipped");
+        });
+        updateZIndices();
+      }
+
+      // ── Flip one step ── (this is the only part that changed)
+      function flipOne(direction, fast = false) {
+        return new Promise((resolve) => {
+          const dur = fast ? 260 : 600;
+
+          if (direction === 1) {
+            // Forward
+            const page = pages[currentSpread];
+            if (!page) {
+              resolve();
+              return;
+            }
+            page.style.transition = `transform ${dur}ms cubic-bezier(0.645,0.045,0.355,1)`;
+            page.style.zIndex = totalSpreads + 10;
+            page.classList.add("flipped");
+            currentSpread++;
+            setTimeout(() => {
+              updateStaticSpread();
+              updateZIndices();
+              resolve();
+            }, dur * 0.6);
+          } else {
+            // Backward (← now symmetric, no more flash)
+            currentSpread--;
+            const page = pages[currentSpread];
+            if (!page) {
+              resolve();
+              return;
+            }
+            page.style.transition = `transform ${dur}ms cubic-bezier(0.645,0.045,0.355,1)`;
+            page.style.zIndex = totalSpreads + 10;
+            page.classList.remove("flipped"); // start animation FIRST
+            setTimeout(() => {
+              updateStaticSpread();
+              updateZIndices();
+              resolve();
+            }, dur * 0.6);
+          }
+        });
+      }
+
+      async function goToSpread(target, fast = false) {
+        if (isFlipping) return;
+        target = Math.max(0, Math.min(totalSpreads - 1, target));
+        if (target === currentSpread) return;
+        isFlipping = true;
+
+        const direction = target > currentSpread ? 1 : -1;
+        const steps = Math.abs(target - currentSpread);
+
+        for (let s = 0; s < steps; s++) {
+          const isFast = fast && s > 0 && s < steps - 1;
+          await flipOne(direction, isFast);
+          if (steps > 1 && s < steps - 1) await sleep(isFast ? 60 : 100);
+        }
+
+        isFlipping = false;
+        updateUI();
+      }
+
+      function sleep(ms) {
+        return new Promise((r) => setTimeout(r, ms));
+      }
+
+      // UI & event listeners (unchanged)
+      const btnPrev = document.getElementById("btnPrev");
+      const btnNext = document.getElementById("btnNext");
+      const pageInput = document.getElementById("pageInput");
+      const totalLabel = document.getElementById("totalLabel");
+      const goBtn = document.getElementById("goBtn");
+      const dotsWrap = document.getElementById("progressDots");
+
+      function buildDots() {
+        dotsWrap.innerHTML = "";
+        for (let i = 0; i < totalSpreads; i++) {
+          const d = document.createElement("div");
+          d.className = "dot" + (i === currentSpread ? " active" : "");
+          d.title = `Spread ${i + 1}`;
+          d.addEventListener("click", () => {
+            const steps = Math.abs(i - currentSpread);
+            goToSpread(i, steps > 2);
+          });
+          dotsWrap.appendChild(d);
+        }
+      }
+
+      function updateUI() {
+        pageInput.value = currentSpread + 1;
+        totalLabel.textContent = `/ ${totalSpreads}`;
+        btnPrev.disabled = currentSpread <= 0;
+        btnNext.disabled = currentSpread >= totalSpreads - 1;
+        document.querySelectorAll(".dot").forEach((d, i) => {
+          d.classList.toggle("active", i === currentSpread);
+        });
+      }
+
+      btnPrev.addEventListener("click", () => goToSpread(currentSpread - 1));
+      btnNext.addEventListener("click", () => goToSpread(currentSpread + 1));
+      document
+        .getElementById("leftZone")
+        .addEventListener("click", () => goToSpread(currentSpread - 1));
+      document
+        .getElementById("rightZone")
+        .addEventListener("click", () => goToSpread(currentSpread + 1));
+
+      function jumpToInputPage() {
+        const val = parseInt(pageInput.value, 10);
+        if (isNaN(val)) return;
+        const target = Math.max(1, Math.min(totalSpreads, val)) - 1;
+        goToSpread(target, Math.abs(target - currentSpread) > 2);
+      }
+      goBtn.addEventListener("click", jumpToInputPage);
+      pageInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") jumpToInputPage();
+      });
+
+      let touchStartX = 0,
+        touchStartY = 0,
+        dragStartX = 0,
+        isDragging = false;
+      const bookEl = document.getElementById("bookWrap");
+
+      bookEl.addEventListener(
+        "touchstart",
+        (e) => {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+        },
+        { passive: true },
+      );
+
+      bookEl.addEventListener(
+        "touchend",
+        (e) => {
+          const dx = e.changedTouches[0].clientX - touchStartX;
+          const dy = e.changedTouches[0].clientY - touchStartY;
+          if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+            if (dx < 0) goToSpread(currentSpread + 1);
+            else goToSpread(currentSpread - 1);
+          }
+        },
+        { passive: true },
+      );
+
+      bookEl.addEventListener("mousedown", (e) => {
+        if (e.target.closest(".hover-zone")) return;
+        dragStartX = e.clientX;
+        isDragging = true;
+      });
+      document.addEventListener("mouseup", (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        const dx = e.clientX - dragStartX;
+        if (Math.abs(dx) > 50) {
+          if (dx < 0) goToSpread(currentSpread + 1);
+          else goToSpread(currentSpread - 1);
+        }
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.target === pageInput) return;
+        if (e.key === "ArrowRight" || e.key === "ArrowDown")
+          goToSpread(currentSpread + 1);
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp")
+          goToSpread(currentSpread - 1);
+      });
+
+      // Init
+      buildPages();
+      buildDots();
+      updateUI();
+    </script>
+  </body>
+</html>
