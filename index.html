@@ -9,11 +9,17 @@
       .grade-selector {
         display: flex;
         justify-content: center;
+        align-items: center;
         gap: 10px;
         padding: 14px 0 10px;
       }
-      .grade-btn {
-        padding: 8px 22px;
+      .grade-selector label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #7a4f1e;
+      }
+      .grade-select {
+        padding: 8px 36px 8px 14px;
         border: 2px solid #b08a5a;
         background: #fff8f0;
         color: #7a4f1e;
@@ -21,24 +27,29 @@
         font-weight: 600;
         border-radius: 6px;
         cursor: pointer;
+        outline: none;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b5e2a' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
         transition:
-          background 0.18s,
-          color 0.18s,
-          border-color 0.18s;
+          border-color 0.18s,
+          background-color 0.18s;
+        min-width: 160px;
       }
-      .grade-btn:hover {
-        background: #f0d9b5;
+      .grade-select:hover,
+      .grade-select:focus {
         border-color: #8b5e2a;
-      }
-      .grade-btn.active {
-        background: #8b5e2a;
-        color: #fff;
-        border-color: #8b5e2a;
+        background-color: #f0d9b5;
       }
     </style>
   </head>
   <body>
-    <div class="grade-selector" id="gradeSelector"></div>
+    <div class="grade-selector">
+      <label for="gradeSelect">Grade:</label>
+      <select class="grade-select" id="gradeSelect"></select>
+    </div>
 
     <div class="scene">
       <div class="book-wrap" id="bookWrap">
@@ -97,6 +108,27 @@
             "ebook/playgroup/12.jpeg",
             "ebook/playgroup/13.jpeg",
             "ebook/playgroup/14.jpeg",
+          ],
+        },
+        {
+          grade: "Foundation",
+          pages: [
+            "ebook/foundation/1.jpg",
+            "ebook/foundation/2.jpg",
+            "ebook/foundation/3.jpg",
+            "ebook/foundation/4.jpg",
+            "ebook/foundation/5.jpg",
+            "ebook/foundation/6.jpg",
+            "ebook/foundation/7.jpg",
+            "ebook/foundation/8.jpg",
+            "ebook/foundation/9.jpg",
+            "ebook/foundation/10.jpg",
+            "ebook/foundation/11.jpg",
+            "ebook/foundation/12.jpg",
+            "ebook/foundation/13.jpg",
+            "ebook/foundation/14.jpg",
+            "ebook/foundation/15.jpg",
+            "ebook/foundation/16.jpg",
           ],
         },
         {
@@ -332,7 +364,6 @@
             "ebook/g8/10.png",
             "ebook/g8/11.png",
             "ebook/g8/12.png",
-            "ebook/g8/13.png",
           ],
         },
         {
@@ -344,6 +375,7 @@
             "ebook/g9/4.png",
             "ebook/g9/5.png",
             "ebook/g9/6.png",
+            "ebook/g9/7.png",
           ],
         },
       ];
@@ -625,22 +657,21 @@
         buildPages();
         buildDots();
         updateUI();
-        document.querySelectorAll(".grade-btn").forEach((btn, i) => {
-          btn.classList.toggle("active", i === bookIndex);
-        });
+        document.getElementById("gradeSelect").value = bookIndex;
       }
 
       function buildGradeButtons() {
-        const selector = document.getElementById("gradeSelector");
-        selector.innerHTML = "";
+        const select = document.getElementById("gradeSelect");
+        select.innerHTML = "";
         books.forEach((book, i) => {
-          const btn = document.createElement("button");
-          btn.className = "grade-btn" + (i === 0 ? " active" : "");
-          btn.textContent = `Grade ${book.grade}`;
-          btn.title = book.bookName;
-          btn.addEventListener("click", () => loadBook(i));
-          selector.appendChild(btn);
+          const opt = document.createElement("option");
+          opt.value = i;
+          opt.textContent = `Grade ${book.grade}`;
+          select.appendChild(opt);
         });
+        select.addEventListener("change", () =>
+          loadBook(parseInt(select.value, 10)),
+        );
       }
 
       // Init
